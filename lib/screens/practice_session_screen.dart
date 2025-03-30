@@ -86,7 +86,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       score: score,
     );
 
-    final studentsBox = Hive.box<Student>('students');
+    final box = Hive.box<Student>('students');
     final updatedStudent = Student(
       firstName: widget.student.firstName,
       lastName: widget.student.lastName,
@@ -96,11 +96,19 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       practices: [...widget.student.practices, practiceResult],
     );
 
-    await studentsBox.putAt(widget.studentIndex, updatedStudent);
-    
+    // Guardar y actualizar (esto notifica automáticamente a los listeners)
+    await box.putAt(widget.studentIndex, updatedStudent);
+
     setState(() {
       showResults = true;
     });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Práctica $nextPracticeNumber guardada'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _restartPractice() {
