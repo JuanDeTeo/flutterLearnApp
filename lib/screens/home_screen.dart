@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'info_screen.dart';
 import 'students_screen.dart';
+import 'practices_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -12,23 +13,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  // Lista de pantallas correspondientes a cada ícono
   final List<Widget> _screens = [
     const StudentsScreen(),
     const InfoScreen(),
-    const Placeholder(), // Pantalla vacía para futuras funcionalidades
+    const PracticesScreen(), // Reemplazamos el Placeholder
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Cuerpo principal que cambia según la pestaña seleccionada
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      
-      // Barra de navegación inferior
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -45,8 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
             currentIndex: _currentIndex,
             onTap: (index) => setState(() => _currentIndex = index),
             backgroundColor: Colors.white,
-            selectedItemColor: const Color(0xFF2C3E50), // Color seleccionado
-            unselectedItemColor: const Color(0xFF708238).withOpacity(0.6), // Color no seleccionado
+            selectedItemColor: const Color(0xFF2C3E50),
+            unselectedItemColor: const Color(0xFF708238).withOpacity(0.6),
             showSelectedLabels: true,
             showUnselectedLabels: true,
             type: BottomNavigationBarType.fixed,
@@ -63,8 +60,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Información',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.more_horiz),
-                label: 'Más',
+                icon: Icon(Icons.assignment_outlined),
+                activeIcon: Icon(Icons.assignment),
+                label: 'Prácticas',
               ),
             ],
           ),

@@ -1,28 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'screens/home_screen.dart';
 import 'models/student.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   // 1. Asegurar la inicialización de Flutter
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // 2. Configurar Hive
-  await _initializeHive();
-  
-  // 3. Lanzar la aplicación
-  runApp(const MyApp());
-}
 
-Future<void> _initializeHive() async {
-  // Inicializar Hive con la ruta adecuada
-  await Hive.initFlutter();
-  
-  // Registrar el adaptador del modelo Student
-  Hive.registerAdapter(StudentAdapter());
-  
-  // Abrir la box de estudiantes
-  await Hive.openBox<Student>('students');
+  try {
+    // 2. Configurar Hive con la ruta adecuada
+    await Hive.initFlutter();
+    
+    // 3. Registrar todos los adaptadores necesarios
+    Hive.registerAdapter(StudentAdapter());
+    Hive.registerAdapter(PracticeResultAdapter()); // Adaptador para los resultados
+    
+    // 4. Abrir la box de estudiantes
+    await Hive.openBox<Student>('students');
+    
+    // 5. Iniciar la aplicación
+    runApp(const MyApp());
+  } catch (e) {
+    // Manejo de errores durante la inicialización
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text('Error al iniciar: ${e.toString()}'),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -45,8 +54,11 @@ class MyApp extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
         ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Color(0xFFF2C94C),
+        ),
       ),
-      home: const HomeScreen(), // ¡Aquí está el cambio importante!
+      home: const HomeScreen(),
     );
   }
 }
