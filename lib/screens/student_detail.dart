@@ -1,62 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/student.dart';
 
-class StudentDetail extends StatelessWidget {
+class StudentDetail extends StatefulWidget {
   final Student student;
+  final int studentIndex;
 
-  const StudentDetail({Key? key, required this.student}) : super(key: key);
+  const StudentDetail({
+    Key? key,
+    required this.student,
+    required this.studentIndex,
+  }) : super(key: key);
 
   @override
+  State<StudentDetail> createState() => _StudentDetailState();
+}
+
+class _StudentDetailState extends State<StudentDetail> {
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${student.firstName} ${student.lastName}'),
-        backgroundColor: const Color(0xFF2C3E50),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('Nombre', student.firstName),
-            _buildDetailRow('Apellido Paterno', student.lastName),
-            _buildDetailRow('Apellido Materno', student.motherLastName),
-            _buildDetailRow(
-              'Fecha de Nacimiento', 
-              DateFormat('dd/MM/yyyy').format(student.birthDate),
-            ),
-            _buildDetailRow('Institución', student.institution),
-            const SizedBox(height: 25),
-            const Divider(),
-            const Text(
-              'Historial de Prácticas',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (student.practices.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 20.0),
-                child: Center(
-                  child: Text(
-                    'No hay prácticas registradas',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+    return ValueListenableBuilder(
+      valueListenable: Hive.box<Student>('students').listenable(),
+      builder: (context, Box<Student> box, _) {
+        final updatedStudent = box.getAt(widget.studentIndex);
+        if (updatedStudent == null) {
+          return const Center(child: Text('Alumno no encontrado'));
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('${updatedStudent.firstName} ${updatedStudent.lastName}'),
+            backgroundColor: const Color(0xFF2C3E50),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDetailRow('Nombre', updatedStudent.firstName),
+                _buildDetailRow('Apellido Paterno', updatedStudent.lastName),
+                _buildDetailRow('Apellido Materno', updatedStudent.motherLastName),
+                _buildDetailRow(
+                  'Fecha de Nacimiento', 
+                  DateFormat('dd/MM/yyyy').format(updatedStudent.birthDate),
+                ),
+                _buildDetailRow('Institución', updatedStudent.institution),
+                const SizedBox(height: 25),
+                const Divider(),
+                const Text(
+                  'Historial de Prácticas',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
                   ),
                 ),
-              )
-            else
-              Column(
-                children: student.practices.reversed.map((practice) {
-                  return _buildPracticeCard(practice);
-                }).toList(),
-              ),
-          ],
-        ),
-      ),
+                const SizedBox(height: 10),
+                if (updatedStudent.practices.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 20.0),
+                    child: Center(
+                      child: Text(
+                        'No hay prácticas registradas',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    children: updatedStudent.practices.reversed.map((practice) {
+                      return _buildPracticeCard(practice);
+                    }).toList(),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
