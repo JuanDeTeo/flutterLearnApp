@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../models/student.dart';
 import 'practice_session_screen.dart';
+import '../services/bluetooth_service.dart';
 
+// 1. Se convierte en un StatelessWidget, ya que no necesita gestionar el estado del servicio.
 class PracticesScreen extends StatelessWidget {
-  const PracticesScreen({Key? key}) : super(key: key);
+  // 2. Recibe la instancia del servicio compartida.
+  final AppBluetoothService bluetoothService;
+
+  const PracticesScreen({Key? key, required this.bluetoothService}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +38,8 @@ class PracticesScreen extends StatelessWidget {
                       builder: (context) => PracticeSessionScreen(
                         student: student,
                         studentIndex: index,
+                        // 3. Se pasa la instancia del servicio que se recibió.
+                        bluetoothService: bluetoothService,
                       ),
                     ),
                   );

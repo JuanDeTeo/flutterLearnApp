@@ -4,29 +4,31 @@ import 'models/student.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
-  // 1. Asegurar la inicialización de Flutter
+  // 1. Asegura que los bindings de Flutter estén inicializados antes de cualquier otra cosa.
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // 2. Configurar Hive con la ruta adecuada
+    // 2. Inicializa Hive para el almacenamiento local.
     await Hive.initFlutter();
     
-    // 3. Registrar todos los adaptadores necesarios
+    // 3. Registra los adaptadores de Hive para que sepa cómo guardar y leer tus clases.
+    // Es crucial que estos adaptadores se registren antes de abrir cualquier 'box'.
     Hive.registerAdapter(StudentAdapter());
-    Hive.registerAdapter(PracticeResultAdapter()); // Adaptador para los resultados
+    Hive.registerAdapter(PracticeResultAdapter());
     
-    // 4. Abrir la box de estudiantes
+    // 4. Abre la 'box' (similar a una tabla en una base de datos) donde se guardarán los estudiantes.
     await Hive.openBox<Student>('students');
     
-    // 5. Iniciar la aplicación
+    // 5. Inicia la aplicación Flutter.
     runApp(const MyApp());
   } catch (e) {
-    // Manejo de errores durante la inicialización
+    // Un bloque catch para manejar cualquier error durante la inicialización
+    // y mostrar un mensaje útil en la pantalla.
     runApp(
       MaterialApp(
         home: Scaffold(
           body: Center(
-            child: Text('Error al iniciar: ${e.toString()}'),
+            child: Text('Error al iniciar la aplicación: ${e.toString()}'),
           ),
         ),
       ),
@@ -58,6 +60,7 @@ class MyApp extends StatelessWidget {
           backgroundColor: Color(0xFFF2C94C),
         ),
       ),
+      // El punto de entrada de la UI de la app es HomeScreen.
       home: const HomeScreen(),
     );
   }

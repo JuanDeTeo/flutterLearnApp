@@ -1,16 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import '../../models/student.dart';
+import '../../services/bluetooth_service.dart';
 
 class PracticeSessionScreen extends StatefulWidget {
   final Student student;
   final int studentIndex;
+  // Actualizamos el tipo a la clase con el nuevo nombre
+  final AppBluetoothService bluetoothService;
 
   const PracticeSessionScreen({
     Key? key,
     required this.student,
     required this.studentIndex,
+    required this.bluetoothService,
   }) : super(key: key);
 
   @override
@@ -27,17 +32,35 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   int correctAnswers = 0;
   late int nextPracticeNumber;
 
+  StreamSubscription<String>? _dataSubscription;
+
   @override
   void initState() {
     super.initState();
     nextPracticeNumber = widget.student.practices.isEmpty 
         ? 1 
         : widget.student.practices.last.practiceNumber + 1;
+    
+    _listenToBluetoothData();
+  }
+
+  void _listenToBluetoothData() {
+    _dataSubscription = widget.bluetoothService.dataStream.listen((data) {
+      if (isPracticing && !showResults) {
+        final expectedChar = practiceItems[currentItemIndex].toUpperCase();
+        final receivedChar = data.trim().toUpperCase();
+
+        if (receivedChar.isNotEmpty) {
+          _recordResult(expectedChar == receivedChar[0]);
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     _inputController.dispose();
+    _dataSubscription?.cancel();
     super.dispose();
   }
 
@@ -63,6 +86,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   }
 
   void _recordResult(bool isCorrect) {
+    if (!mounted || !isPracticing) return;
+
     setState(() {
       userResults[currentItemIndex] = isCorrect ? '✓' : '✗';
       if (isCorrect) correctAnswers++;
@@ -87,28 +112,33 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     );
 
     final box = Hive.box<Student>('students');
+    final updatedPractices = List<PracticeResult>.from(widget.student.practices)
+      ..add(practiceResult);
+
     final updatedStudent = Student(
       firstName: widget.student.firstName,
       lastName: widget.student.lastName,
       motherLastName: widget.student.motherLastName,
       birthDate: widget.student.birthDate,
       institution: widget.student.institution,
-      practices: [...widget.student.practices, practiceResult],
+      practices: updatedPractices,
     );
 
-    // Guardar y actualizar (esto notifica automáticamente a los listeners)
     await box.putAt(widget.studentIndex, updatedStudent);
 
     setState(() {
+      isPracticing = false;
       showResults = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Práctica $nextPracticeNumber guardada'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Práctica $nextPracticeNumber guardada'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _restartPractice() {
@@ -128,6 +158,18 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       appBar: AppBar(
         title: Text('Práctica $nextPracticeNumber'),
         backgroundColor: const Color(0xFF2C3E50),
+        actions: [
+          StreamBuilder<dynamic>(
+            stream: widget.bluetoothService.connectionStream,
+            builder: (context, snapshot) {
+              return Icon(
+                snapshot.data != null ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                color: snapshot.data != null ? Colors.lightBlueAccent : Colors.white,
+              );
+            }
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: showResults
           ? _buildResultsScreen()
@@ -197,7 +239,12 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 10),
+        const Text(
+          "Usa el teclado físico o los botones en pantalla",
+          style: TextStyle(color: Colors.grey, fontSize: 14),
+        ),
+        const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -239,7 +286,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     );
   }
 
-  Widget _buildResultsScreen() {
+   Widget _buildResultsScreen() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
