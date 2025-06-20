@@ -39,6 +39,7 @@ dependencies:
   hive_flutter: ^1.1.0
   intl: ^0.18.1 # Para manejo de fechas
   flutter_datetime_picker: ^1.5.1
+  flutter_blue_plus: ^1.17.5 # O la versión más reciente
 
 dev_dependencies:
   flutter_test:
