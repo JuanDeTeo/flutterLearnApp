@@ -5,10 +5,57 @@ import 'package:intl/intl.dart';
 import '../../models/student.dart';
 import '../../services/bluetooth_service.dart';
 
+/**
+ * @author Juan De Dios Mendoza Peinado
+ * * @abstract
+ * Clase auxiliar para filtrar entradas de Bluetooth repetidas (key bounce).
+ * Procesa un carácter y luego entra en un período de "enfriamiento"
+ * durante el cual ignora el mismo carácter para evitar registros múltiples.
+ *
+ * @param coolDown La duración del período de enfriamiento.
+ */
+class InputThrottle {
+  final Duration coolDown;
+  /**
+   * @var _lastProcessedTime Mapa para almacenar la última vez que se procesó cada carácter.
+   */
+  final Map<String, DateTime> _lastProcessedTime = {};
+
+  InputThrottle({required this.coolDown});
+
+  /**
+   * @abstract
+   * Determina si un carácter debe ser procesado.
+   * * @param char El carácter recibido de la entrada.
+   * @return `true` si el carácter es nuevo o si su período de enfriamiento ha terminado.
+   */
+  bool canProcess(String char) {
+    if (char.isEmpty) return false;
+
+    final charKey = char[0]; // Usamos solo el primer carácter de la entrada
+    final now = DateTime.now();
+    final lastTime = _lastProcessedTime[charKey];
+
+    if (lastTime == null || now.difference(lastTime) > coolDown) {
+      _lastProcessedTime[charKey] = now;
+      return true;
+    }
+    
+    return false;
+  }
+}
+
+/**
+ * @abstract
+ * Pantalla donde se lleva a cabo la sesión de práctica de Braille.
+ * El alumno visualiza caracteres y responde, y la app registra sus aciertos y errores.
+ * * @param student El alumno que está realizando la práctica.
+ * @param studentIndex El índice del alumno en la base de datos de Hive.
+ * @param bluetoothService La instancia del servicio de Bluetooth para recibir las respuestas.
+ */
 class PracticeSessionScreen extends StatefulWidget {
   final Student student;
   final int studentIndex;
-  // Actualizamos el tipo a la clase con el nuevo nombre
   final AppBluetoothService bluetoothService;
 
   const PracticeSessionScreen({
@@ -23,6 +70,11 @@ class PracticeSessionScreen extends StatefulWidget {
 }
 
 class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
+  /**
+   * @var _inputThrottle Instancia para regular las entradas de Bluetooth.
+   */
+  final _inputThrottle = InputThrottle(coolDown: const Duration(milliseconds: 500));
+
   final TextEditingController _inputController = TextEditingController();
   List<String> practiceItems = [];
   List<String?> userResults = [];
@@ -37,21 +89,30 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
   @override
   void initState() {
     super.initState();
-    nextPracticeNumber = widget.student.practices.isEmpty 
-        ? 1 
+    nextPracticeNumber = widget.student.practices.isEmpty
+        ? 1
         : widget.student.practices.last.practiceNumber + 1;
-    
+
     _listenToBluetoothData();
   }
 
+  /**
+   * @abstract
+   * Se suscribe al flujo de datos del servicio de Bluetooth.
+   * Cuando se reciben datos, los procesa a través del _inputThrottle para evitar
+   * registros duplicados y llama a _recordResult.
+   */
   void _listenToBluetoothData() {
     _dataSubscription = widget.bluetoothService.dataStream.listen((data) {
       if (isPracticing && !showResults) {
-        final expectedChar = practiceItems[currentItemIndex].toUpperCase();
-        final receivedChar = data.trim().toUpperCase();
+        final receivedFullString = data.trim().toUpperCase();
+        if (receivedFullString.isEmpty) return;
 
-        if (receivedChar.isNotEmpty) {
-          _recordResult(expectedChar == receivedChar[0]);
+        final charToProcess = receivedFullString[0];
+
+        if (_inputThrottle.canProcess(charToProcess)) {
+          final expectedChar = practiceItems[currentItemIndex].toUpperCase();
+          _recordResult(expectedChar == charToProcess);
         }
       }
     });
@@ -64,6 +125,12 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     super.dispose();
   }
 
+  /**
+   * @abstract
+   * Inicia la sesión de práctica.
+   * Toma los caracteres del _inputController, los separa y prepara el estado
+   * de la pantalla para comenzar la sesión.
+   */
   void _startPractice() {
     if (_inputController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +143,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       practiceItems = _inputController.text.split(',').expand((item) {
         return item.trim().split('');
       }).where((char) => char.isNotEmpty).toList();
-      
+
       userResults = List.filled(practiceItems.length, null);
       isPracticing = true;
       currentItemIndex = 0;
@@ -85,13 +152,20 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     });
   }
 
+  /**
+   * @abstract
+   * Registra el resultado (correcto o incorrecto) para el ítem actual de la práctica.
+   * Avanza al siguiente ítem o finaliza la práctica si es el último.
+   *
+   * @param isCorrect Booleano que indica si la respuesta fue correcta.
+   */
   void _recordResult(bool isCorrect) {
     if (!mounted || !isPracticing) return;
 
     setState(() {
       userResults[currentItemIndex] = isCorrect ? '✓' : '✗';
       if (isCorrect) correctAnswers++;
-      
+
       if (currentItemIndex < practiceItems.length - 1) {
         currentItemIndex++;
       } else {
@@ -100,6 +174,11 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     });
   }
 
+  /**
+   * @abstract
+   * Finaliza la sesión de práctica, guarda los resultados en la base de datos de Hive
+   * y actualiza la UI para mostrar la pantalla de resultados.
+   */
   Future<void> _finishPractice() async {
     final score = '$correctAnswers/${practiceItems.length}';
     final results = userResults.join(',');
@@ -141,6 +220,11 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     }
   }
 
+  /**
+   * @abstract
+   * Reinicia el estado de la pantalla para permitir iniciar una nueva práctica.
+   * Limpia los ítems anteriores y se prepara para una nueva entrada.
+   */
   void _restartPractice() {
     setState(() {
       isPracticing = false;
@@ -158,18 +242,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       appBar: AppBar(
         title: Text('Práctica $nextPracticeNumber'),
         backgroundColor: const Color(0xFF2C3E50),
-        actions: [
-          StreamBuilder<dynamic>(
-            stream: widget.bluetoothService.connectionStream,
-            builder: (context, snapshot) {
-              return Icon(
-                snapshot.data != null ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-                color: snapshot.data != null ? Colors.lightBlueAccent : Colors.white,
-              );
-            }
-          ),
-          const SizedBox(width: 16),
-        ],
+        actions: const [],
       ),
       body: showResults
           ? _buildResultsScreen()
@@ -177,6 +250,13 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     );
   }
 
+  /**
+   * @abstract
+   * Construye la vista de configuración inicial donde el tutor ingresa los
+   * caracteres para la práctica.
+   *
+   * @return Un widget con el campo de texto y el botón de inicio.
+   */
   Widget _buildPracticeSetup() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -203,7 +283,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF708238),
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                 ),
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
@@ -211,10 +292,11 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF2C94C),
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                 ),
                 onPressed: _startPractice,
-                child: const Text('Iniciar Práctica', 
+                child: const Text('Iniciar Práctica',
                     style: TextStyle(fontSize: 16, color: Colors.black)),
               ),
             ],
@@ -224,6 +306,13 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     );
   }
 
+  /**
+   * @abstract
+   * Construye la vista principal de la sesión de práctica, mostrando el carácter
+   * actual que el alumno debe identificar.
+   *
+   * @return Un widget que muestra el carácter actual y los botones de control.
+   */
   Widget _buildPracticeSession() {
     return Column(
       children: [
@@ -234,7 +323,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
               child: Text(
                 key: ValueKey(currentItemIndex),
                 practiceItems[currentItemIndex],
-                style: const TextStyle(fontSize: 72, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 72, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -253,7 +343,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
               label: const Text('Correcto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
               onPressed: () => _recordResult(true),
             ),
@@ -263,7 +354,8 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
               label: const Text('Incorrecto'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
               onPressed: () => _recordResult(false),
             ),
@@ -286,19 +378,25 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
     );
   }
 
-   Widget _buildResultsScreen() {
+  /**
+   * @abstract
+   * Construye la pantalla de resultados que se muestra al finalizar la práctica.
+   *
+   * @return Un widget que muestra la puntuación final y opciones para continuar.
+   */
+  Widget _buildResultsScreen() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            correctAnswers / practiceItems.length >= 0.7 
-                ? Icons.check_circle 
+            correctAnswers / practiceItems.length >= 0.7
+                ? Icons.check_circle
                 : Icons.warning,
             size: 80,
-            color: correctAnswers / practiceItems.length >= 0.7 
-                ? Colors.green 
+            color: correctAnswers / practiceItems.length >= 0.7
+                ? Colors.green
                 : Colors.orange,
           ),
           const SizedBox(height: 30),
@@ -318,18 +416,22 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2C3E50),
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                 ),
                 onPressed: _restartPractice,
-                child: const Text('Repetir Práctica', style: TextStyle(fontSize: 16)),
+                child:
+                    const Text('Repetir Práctica', style: TextStyle(fontSize: 16)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF2C94C),
-                  padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Volver', style: TextStyle(fontSize: 16, color: Colors.black)),
+                child: const Text('Volver',
+                    style: TextStyle(fontSize: 16, color: Colors.black)),
               ),
             ],
           ),

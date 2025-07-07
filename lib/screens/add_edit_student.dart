@@ -3,6 +3,19 @@ import 'package:intl/intl.dart';
 import '../models/student.dart';
 import '../services/hive_service.dart';
 
+/**
+ * @author Juan De Dios Mendoza Peinado
+ *
+ * @abstract
+ * Una pantalla que permite agregar un nuevo estudiante o editar uno existente.
+ * Utiliza un formulario para capturar los datos del estudiante y los guarda
+ * en la base de datos de Hive a través de [HiveService].
+ *
+ * @param student El estudiante a editar. Si es nulo, la pantalla funciona en modo "Agregar".
+ * @param index El índice del estudiante en la caja de Hive, necesario para la actualización.
+ *
+ * @package
+ */
 class AddEditStudent extends StatefulWidget {
   final Student? student;
   final int? index;
@@ -13,14 +26,47 @@ class AddEditStudent extends StatefulWidget {
   State<AddEditStudent> createState() => _AddEditStudentState();
 }
 
+/**
+ * @abstract
+ * El estado asociado con [AddEditStudent]. Gestiona el formulario, los controladores
+ * de texto y la lógica para guardar o actualizar un estudiante.
+ */
 class _AddEditStudentState extends State<AddEditStudent> {
+  /**
+   * @var _formKey Clave global para validar el estado del formulario.
+   */
   final _formKey = GlobalKey<FormState>();
+
+  /**
+   * @var _firstNameController Controlador para el campo de texto del nombre.
+   */
   late TextEditingController _firstNameController;
+  
+  /**
+   * @var _lastNameController Controlador para el campo de texto del apellido paterno.
+   */
   late TextEditingController _lastNameController;
+  
+  /**
+   * @var _motherLastNameController Controlador para el campo de texto del apellido materno.
+   */
   late TextEditingController _motherLastNameController;
+  
+  /**
+   * @var _institutionController Controlador para el campo de texto de la institución.
+   */
   late TextEditingController _institutionController;
+  
+  /**
+   * @var _birthDate La fecha de nacimiento seleccionada para el estudiante.
+   */
   DateTime? _birthDate;
 
+  /**
+   * @abstract
+   * Inicializa el estado del widget. Si se proporciona un estudiante, los campos
+   * del formulario se llenan con sus datos existentes.
+   */
   @override
   void initState() {
     super.initState();
@@ -31,6 +77,11 @@ class _AddEditStudentState extends State<AddEditStudent> {
     _birthDate = widget.student?.birthDate;
   }
 
+  /**
+   * @abstract
+   * Libera los recursos utilizados por los [TextEditingController] cuando el
+   * widget se elimina del árbol de widgets.
+   */
   @override
   void dispose() {
     _firstNameController.dispose();
@@ -40,6 +91,14 @@ class _AddEditStudentState extends State<AddEditStudent> {
     super.dispose();
   }
 
+  /**
+   * @abstract
+   * Muestra un [showDatePicker] para que el usuario seleccione la fecha de nacimiento.
+   * La fecha seleccionada se guarda en la variable de estado [_birthDate].
+   *
+   * @param context El contexto de compilación del widget.
+   * @return Un [Future] que se completa cuando el usuario cierra el selector de fecha.
+   */
   Future<void> _selectDate(BuildContext context) async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -52,6 +111,12 @@ class _AddEditStudentState extends State<AddEditStudent> {
     }
   }
 
+  /**
+   * @abstract
+   * Valida el formulario y, si es válido, crea un objeto [Student] con los datos
+   * ingresados. Luego, utiliza [HiveService] para agregar o actualizar el estudiante
+   * en la base de datos y cierra la pantalla.
+   */
   void _saveStudent() {
     if (_formKey.currentState!.validate() && _birthDate != null) {
       final student = Student(

@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/bluetooth_service.dart';
 import 'info_screen.dart';
 import 'students_screen.dart';
-import 'practices_screen.dart';
 
+/**
+ * @author Juan De Dios Mendoza Peinado
+ * * @abstract
+ * La pantalla principal de la aplicación que contiene la barra de navegación inferior.
+ * Gestiona la navegación entre las pantallas principales: Alumnos e Información.
+ * También inicializa y gestiona el ciclo de vida del servicio de Bluetooth.
+ */
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -11,39 +17,60 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
+/**
+ * @abstract
+ * El estado de la [HomeScreen]. Administra el índice de la pantalla actual
+ * y la instancia del servicio de Bluetooth.
+ */
 class _HomeScreenState extends State<HomeScreen> {
+  /**
+   * @var _currentIndex El índice de la pestaña de navegación actualmente seleccionada.
+   */
   int _currentIndex = 0;
   
-  // Se crea una única instancia del servicio de Bluetooth aquí,
-  // asegurando que su ciclo de vida esté atado a la pantalla principal.
+  /**
+   * @var _bluetoothService La instancia única del servicio de Bluetooth compartida en toda la app.
+   */
   final AppBluetoothService _bluetoothService = AppBluetoothService();
 
-  // La lista de pantallas se inicializa en initState para poder pasar el servicio.
+  /**
+   * @var _screens La lista de widgets de pantalla para la navegación.
+   */
   late final List<Widget> _screens;
 
+  /**
+   * @abstract
+   * Inicializa el estado, creando la lista de pantallas y pasando la instancia
+   * del servicio de Bluetooth a las pantallas que la necesitan.
+   */
   @override
   void initState() {
     super.initState();
-    // Se pasa la misma instancia del servicio a las pantallas que la necesiten.
     _screens = [
       StudentsScreen(bluetoothService: _bluetoothService),
-      PracticesScreen(bluetoothService: _bluetoothService),
       const InfoScreen(),
     ];
   }
 
+  /**
+   * @abstract
+   * Libera los recursos del servicio de Bluetooth cuando la pantalla principal se destruye.
+   */
   @override
   void dispose() {
-    // Se liberan los recursos del servicio solo cuando esta pantalla se destruye.
     _bluetoothService.dispose();
     super.dispose();
   }
 
+  /**
+   * @abstract
+   * Construye la UI de la pantalla principal, que consiste en un IndexedStack para
+   * mantener el estado de las pantallas y una BottomNavigationBar para la navegación.
+   * * @return Un widget Scaffold que estructura la pantalla principal.
+   */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Se usa IndexedStack para mantener el estado de las pantallas
-      // al cambiar de pestaña, lo que mejora el rendimiento y la experiencia de usuario.
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -58,11 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.people_outline),
             activeIcon: Icon(Icons.people),
             label: 'Alumnos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            activeIcon: Icon(Icons.assignment),
-            label: 'Prácticas',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.info_outline),

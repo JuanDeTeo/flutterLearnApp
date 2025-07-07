@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../services/bluetooth_service.dart';
 
+/**
+ * @author Juan De Dios Mendoza Peinado
+ * * @abstract
+ * Pantalla para escanear y conectarse a dispositivos Bluetooth.
+ * Muestra una lista de dispositivos encontrados y permite al usuario
+ * seleccionar uno para establecer una conexión.
+ * * @param bluetoothService Instancia del servicio de Bluetooth para manejar la lógica de conexión.
+ */
 class BluetoothScreen extends StatefulWidget {
-  // Actualizado para usar la clase con el nuevo nombre
   final AppBluetoothService bluetoothService;
   
   const BluetoothScreen({Key? key, required this.bluetoothService}) : super(key: key);
@@ -12,19 +19,40 @@ class BluetoothScreen extends StatefulWidget {
   _BluetoothScreenState createState() => _BluetoothScreenState();
 }
 
+/**
+ * @abstract
+ * Gestiona el estado de la pantalla Bluetooth, incluyendo el inicio y la detención
+ * del escaneo de dispositivos.
+ */
 class _BluetoothScreenState extends State<BluetoothScreen> {
+  /**
+   * @abstract
+   * Inicia el escaneo de dispositivos Bluetooth cuando se carga la pantalla.
+   */
   @override
   void initState() {
     super.initState();
     widget.bluetoothService.startScan();
   }
 
+  /**
+   * @abstract
+   * Detiene el escaneo de dispositivos Bluetooth cuando la pantalla se destruye
+   * para liberar recursos.
+   */
   @override
   void dispose() {
     widget.bluetoothService.stopScan();
     super.dispose();
   }
 
+  /**
+   * @abstract
+   * Construye la interfaz de usuario de la pantalla de Bluetooth.
+   * Utiliza un StreamBuilder para mostrar el estado del escaneo y la lista de
+   * dispositivos encontrados en tiempo real.
+   * * @return Un widget Scaffold que contiene la UI de la pantalla.
+   */
   @override
   Widget build(BuildContext context) {
     return Scaffold(

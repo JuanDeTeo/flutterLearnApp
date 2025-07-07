@@ -8,8 +8,15 @@ import 'student_detail.dart';
 import 'practice_session_screen.dart';
 import 'bluetooth_screen.dart';
 
+/**
+ * @author Juan De Dios Mendoza Peinado
+ * * @abstract
+ * Pantalla principal de la pestaña "Alumnos". Muestra una lista de todos los estudiantes
+ * registrados y proporciona opciones para ver detalles, editar, eliminar e iniciar 
+ * una sesión de práctica para cada uno.
+ * * @param bluetoothService La instancia compartida del servicio Bluetooth.
+ */
 class StudentsScreen extends StatefulWidget {
-  // Recibe la instancia del servicio compartida.
   final AppBluetoothService bluetoothService;
   
   const StudentsScreen({Key? key, required this.bluetoothService}) : super(key: key);
@@ -18,9 +25,19 @@ class StudentsScreen extends StatefulWidget {
   _StudentsScreenState createState() => _StudentsScreenState();
 }
 
+/**
+ * @abstract
+ * Gestiona el estado de la pantalla de alumnos.
+ */
 class _StudentsScreenState extends State<StudentsScreen> {
-  // Ya no se crea ni se destruye una instancia local del servicio.
-
+  
+  /**
+   * @abstract
+   * Construye la interfaz de usuario de la pantalla. Utiliza un [ValueListenableBuilder]
+   * para reaccionar a los cambios en la base de datos de Hive y mantener la lista de
+   * alumnos siempre actualizada.
+   * * @return Un widget Scaffold que contiene la lista de alumnos y acciones.
+   */
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,7 +46,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
         backgroundColor: const Color(0xFF2C3E50),
         actions: [
           StreamBuilder<dynamic>(
-            // Se usa la instancia del servicio recibida a través del widget.
             stream: widget.bluetoothService.connectionStream,
             builder: (context, snapshot) {
               return IconButton(
@@ -80,7 +96,6 @@ class _StudentsScreenState extends State<StudentsScreen> {
                                     builder: (context) => PracticeSessionScreen(
                                       student: student,
                                       studentIndex: index,
-                                      // Se pasa la instancia compartida a la siguiente pantalla.
                                       bluetoothService: widget.bluetoothService,
                                     ),
                                   ),
@@ -112,6 +127,13 @@ class _StudentsScreenState extends State<StudentsScreen> {
     );
   }
 
+  /**
+   * @abstract
+   * Muestra un diálogo de confirmación y, si el usuario confirma, elimina un 
+   * estudiante de la base de datos de Hive.
+   * * @param context El BuildContext para mostrar el diálogo.
+   * @param index El índice del estudiante a eliminar en la caja de Hive.
+   */
   Future<void> _deleteStudent(BuildContext context, int index) async {
     final confirmed = await showDialog<bool>(
       context: context,

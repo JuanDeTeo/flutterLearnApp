@@ -4,6 +4,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../models/student.dart';
 
+/**
+ * @author Juan De Dios Mendoza Peinado
+ * * @abstract
+ * Una pantalla que muestra los detalles completos de un estudiante específico,
+ * incluyendo su información personal y un historial de todas sus prácticas realizadas.
+ * * @param student El objeto del estudiante cuyos detalles se mostrarán.
+ * @param studentIndex El índice del estudiante en la base de datos de Hive para escuchar actualizaciones.
+ */
 class StudentDetail extends StatefulWidget {
   final Student student;
   final int studentIndex;
@@ -18,7 +26,20 @@ class StudentDetail extends StatefulWidget {
   State<StudentDetail> createState() => _StudentDetailState();
 }
 
+/**
+ * @abstract
+ * El estado de la pantalla [StudentDetail].
+ * Utiliza un [ValueListenableBuilder] para reconstruir la UI automáticamente si los datos
+ * del estudiante cambian en la base de datos de Hive.
+ */
 class _StudentDetailState extends State<StudentDetail> {
+  /**
+   * @abstract
+   * Construye la interfaz de usuario de la pantalla de detalles del alumno.
+   * Escucha cambios en la caja de 'students' de Hive y actualiza la vista
+   * si el alumno actual es modificado.
+   * * @return Un widget Scaffold con los detalles y el historial de prácticas del alumno.
+   */
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
@@ -26,7 +47,9 @@ class _StudentDetailState extends State<StudentDetail> {
       builder: (context, Box<Student> box, _) {
         final updatedStudent = box.getAt(widget.studentIndex);
         if (updatedStudent == null) {
-          return const Center(child: Text('Alumno no encontrado'));
+          return const Scaffold(
+            body: Center(child: Text('Alumno no encontrado'))
+          );
         }
 
         return Scaffold(
@@ -82,6 +105,13 @@ class _StudentDetailState extends State<StudentDetail> {
     );
   }
 
+  /**
+   * @abstract
+   * Widget auxiliar para construir una fila de detalle con una etiqueta y un valor.
+   * * @param label El texto de la etiqueta (ej. "Nombre").
+   * @param value El valor a mostrar (ej. "Juan").
+   * @return Un widget Column que muestra la etiqueta y el valor.
+   */
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -107,6 +137,12 @@ class _StudentDetailState extends State<StudentDetail> {
     );
   }
 
+  /**
+   * @abstract
+   * Widget auxiliar para construir una tarjeta que resume una sesión de práctica.
+   * * @param practice El objeto [PracticeResult] que contiene los datos de la práctica.
+   * @return Un widget Card estilizado con los detalles de la práctica.
+   */
   Widget _buildPracticeCard(PracticeResult practice) {
     return Card(
       margin: const EdgeInsets.only(bottom: 15),
@@ -181,12 +217,18 @@ class _StudentDetailState extends State<StudentDetail> {
     );
   }
 
+  /**
+   * @abstract
+   * Determina el color de fondo para el indicador de puntuación basado en el rendimiento.
+   * * @param score La puntuación en formato "correctas/totales" (ej. "8/10").
+   * @return Un [Color] (verde, amarillo o rojo) según el porcentaje de aciertos.
+   */
   Color _getScoreColor(String score) {
     final parts = score.split('/');
     if (parts.length == 2) {
       final correct = int.tryParse(parts[0]) ?? 0;
       final total = int.tryParse(parts[1]) ?? 1;
-      final ratio = correct / total;
+      final ratio = total == 0 ? 0 : correct / total;
       
       if (ratio >= 0.8) return Colors.green;
       if (ratio >= 0.5) return const Color(0xFFF2C94C);
