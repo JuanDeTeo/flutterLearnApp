@@ -234,7 +234,7 @@ class InfoScreen extends StatelessWidget {
                         TextSpan(text: 'Dra. Carolina Tripp Barba\n'),
                         TextSpan(text: 'Mc. Juan Jose Rodriguez\n\n'),
 
-                        // Alumnos
+                        // Alumnos colaboradores
                         TextSpan(
                           text: 'Alumnos\n',
                           style: TextStyle(fontWeight: FontWeight.bold),

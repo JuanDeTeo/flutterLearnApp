@@ -11,8 +11,10 @@ import '../services/hive_service.dart';
  * Utiliza un formulario para capturar los datos del estudiante y los guarda
  * en la base de datos de Hive a través de [HiveService].
  *
- * @param student El estudiante a editar. Si es nulo, la pantalla funciona en modo "Agregar".
- * @param index El índice del estudiante en la caja de Hive, necesario para la actualización.
+ * @param student El estudiante a editar. Si es nulo, 
+ * la pantalla funciona en modo "Agregar".
+ * @param index El índice del estudiante en la caja de Hive, 
+ * necesario para la actualización.
  *
  * @package
  */
