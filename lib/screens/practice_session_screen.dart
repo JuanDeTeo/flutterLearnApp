@@ -132,18 +132,26 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
    * de la pantalla para comenzar la sesión.
    */
   void _startPractice() {
-    if (_inputController.text.trim().isEmpty) {
+    // Expresión regular para aceptar solo letras, incluyendo vocales con acento y la 'ñ'.
+    final RegExp allowedChars = RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ]');
+    
+    // Extrae todos los caracteres que coinciden con la expresión regular.
+    final List<String> filteredItems = allowedChars
+        .allMatches(_inputController.text)
+        .map((match) => match.group(0)!)
+        .toList();
+
+    // Valida que se haya ingresado al menos un carácter válido.
+    if (filteredItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingrese al menos un carácter')),
+        const SnackBar(content: Text('Ingrese al menos una letra válida')),
       );
       return;
     }
 
+    // Actualiza el estado para iniciar la práctica con los caracteres filtrados.
     setState(() {
-      practiceItems = _inputController.text.split(',').expand((item) {
-        return item.trim().split('');
-      }).where((char) => char.isNotEmpty).toList();
-
+      practiceItems = filteredItems;
       userResults = List.filled(practiceItems.length, null);
       isPracticing = true;
       currentItemIndex = 0;
@@ -151,6 +159,7 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
       showResults = false;
     });
   }
+
 
   /**
    * @abstract
@@ -409,29 +418,44 @@ class _PracticeSessionScreenState extends State<PracticeSessionScreen> {
             'Resultado: $correctAnswers/${practiceItems.length}',
             style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 40),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2C3E50),
+                  foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 onPressed: _restartPractice,
-                child:
-                    const Text('Repetir Práctica', style: TextStyle(fontSize: 16)),
+                child: const Text('Repetir Práctica'),
               ),
+              const SizedBox(width: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFF2C94C),
+                  foregroundColor: Colors.black,
                   padding:
                       const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                   shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Volver',
-                    style: TextStyle(fontSize: 16, color: Colors.black)),
+                child: const Text('Volver'),
               ),
             ],
           ),
