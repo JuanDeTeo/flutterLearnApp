@@ -3,6 +3,16 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'models/student.dart';
 import 'screens/home_screen.dart';
 
+/**
+ * @abstract Punto de entrada principal de la aplicación.
+ * @description Esta función se encarga de realizar las configuraciones iniciales críticas
+ * antes de que la aplicación Flutter se ejecute. Asegura que los bindings de Flutter
+ * estén listos, inicializa la base de datos local Hive, registra los adaptadores
+ * de tipo necesarios para la serialización de datos y abre la 'box' de estudiantes.
+ * En caso de un error durante la inicialización, muestra una pantalla de error.
+ * @author Juan De Dios Mendoza Peinado
+ * @access public
+ */
 void main() async {
   // 1. Asegura que los bindings de Flutter estén inicializados antes de cualquier otra cosa.
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,9 +46,26 @@ void main() async {
   }
 }
 
+/**
+ * @abstract Widget raíz de la aplicación de gestión de alumnos.
+ * @description Este widget StatelessWidget configura el MaterialApp, que es el
+ * componente fundamental para una aplicación que sigue los lineamientos de Material Design.
+ * Define el título, el tema global (colores, estilos de la AppBar, etc.) y establece
+ * la pantalla de inicio (`HomeScreen`).
+ * @author Juan De Dios Mendoza Peinado
+ * @package gestion_alumnos
+ * @access public
+ */
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
+  /**
+   * @abstract Construye la interfaz de usuario del widget raíz.
+   * @author Juan De Dios Mendoza Peinado
+   * @param {BuildContext} context El contexto del árbol de widgets.
+   * @return {Widget} Retorna el widget MaterialApp configurado para la aplicación.
+   * @access public
+   */
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
