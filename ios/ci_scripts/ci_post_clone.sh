@@ -16,5 +16,7 @@ flutter pub get
 # Install CocoaPods using Homebrew.
 HOMEBREW_NO_AUTO_UPDATE=1 brew install cocoapods
 
-# Install pod dependencies.
-cd ios && pod install
+# Install pod dependencies if Podfile exists.
+if [ -f "ios/Podfile" ]; then
+    cd ios && pod install
+fi
